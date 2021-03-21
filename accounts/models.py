@@ -66,18 +66,13 @@ class User(PermissionsMixin, AbstractBaseUser):
     """
 
     # Custom fields
-    email = models.EmailField(
-        verbose_name='email address',
-        max_length=255,
-        unique=True,
-    )
-    username = models.CharField(max_length=1500)
-    signup_time = models.DateTimeField(auto_now_add=True,blank=True,null=True)
+    email = models.EmailField(verbose_name='email address', max_length=255, unique=True)
+    signup_time = models.DateTimeField(auto_now_add=True, blank=True, null=True)
 
     # Permission fields
     is_active = models.BooleanField(default=True)
-    is_staff = models.BooleanField(default=False) # a admin user; non super-user
-    is_admin = models.BooleanField(default=False) # a superuser
+    is_staff = models.BooleanField(default=False) # admin user; non super-user
+    is_admin = models.BooleanField(default=False) # superuser
     is_server_admin = models.BooleanField(default=False) #access for server admin panel
     status = models.CharField(max_length=50, default="active", choices=USER_STATUS)
 
@@ -132,6 +127,8 @@ class User(PermissionsMixin, AbstractBaseUser):
 class Profile(Timestamp):
     """
     User Profile
+    Extends Timestamp (Abstract Class) 
+    pk: UUID
     """
 
     user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -146,7 +143,7 @@ class Profile(Timestamp):
         verbose_name_plural = "profiles"
 
     def __str__(self):
-        return self.user
+        return self.user.email
 
     def save(self, *args, **kwargs):
         super(Profile, self).save(*args, **kwargs)
