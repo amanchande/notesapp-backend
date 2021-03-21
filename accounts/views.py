@@ -1,29 +1,40 @@
-from django.shortcuts import render
-from django.contrib.auth.models import User
-from rest_framework import permissions, status
-from rest_framework.decorators import api_view
-from rest_framework.response import response
+from django.shortcuts import render, get_object_or_404
+from .models import User, Profile
+from rest_framework import permissions, serializers, status, viewsets
+from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
+from rest_framework.decorators import api_view, permission_classes, action
+from rest_framework.response import Response
 from rest_framework.views import APIView
-from .serializers import UserSerializer, UserSerializerWithToken
+from .serializers import UserSerializer, ProfileSerializer
+
 # Create your views here.
 
-@api_view('GET')
+@api_view(['GET'])
 def current_user(request):
-
-    serializer = UserSerializer(request.user)
+    try:
+        serializer = UserSerializer(request.user)
+    except:
+        print('Error')
     return Response(serializer.data)
 
-class UserList(APIView):
-    """
-    Create a new user. It's called 'UserList' because normally we'd have a get
-    method here too, for retrieving a list of all User objects.
-    """
+class ProfileViewSet(viewsets.ModelViewSet):
+    serializer_class = ProfileSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = Profile.objects.select_related('user').all()
 
-    permission_classes = (permissions.AllowAny,)
+class UserViewSet(viewsets.ModelViewSet):
+    serializer_class = UserSerializer
+    queryset = User.objects.all()
 
-    def post(self, request, format=None):
-        serializer = UserSerializerWithToken(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_404_BAD_REQUEST)
+    def get_permissions(self):
+        """
+        Instantiates and returns the list of permissions that this view requires.
+        """
+        if self.action == 'retrieve':
+            permission_classes = [IsAuthenticated]
+        elif self.action == 'create':
+            permission_classes = [AllowAny]
+        else:
+            permission_classes = [IsAdminUser]
+            
+        return [permission() for permission in permission_classes]

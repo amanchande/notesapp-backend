@@ -13,10 +13,22 @@
 #     1. Import the include() function: from django.urls import include, path
 #     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 # """
-# from django.contrib import admin
-# from django.urls import path, include
-# from rest_framework_jwt.views import obtain_jwt_token
+from django.contrib import admin
+from django.urls import path, include
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView,
+)
+from .views import ProfileViewSet, UserViewSet
+from rest_framework.routers import DefaultRouter
 
-# urlpatterns = [
-#     path('api/auth-token/', include('accounts.urls')),
-# ]
+
+router = DefaultRouter()
+router.register(r'user', UserViewSet, basename='user')
+router.register(r'profile', ProfileViewSet, basename='profile')
+
+urlpatterns = [
+    path('login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+]
+urlpatterns += router.urls
