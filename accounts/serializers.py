@@ -1,59 +1,44 @@
+from django.db.models import fields
+from django.db.models.base import Model
 from rest_framework import serializers
-from django.contrib.auth.models import User
-from rest_framework_jwt.settings import authenticate
+from .models import Profile, User
+from rest_framework.validators import UniqueValidator
+from django.contrib.auth.password_validation import validate_password
 
 # User Serializer
 class UserSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(
+            required=True,
+            validators=[UniqueValidator(queryset=User.objects.all())]
+            )
+    password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
+    password2 = serializers.CharField(write_only=True, required=True)
 
     class Meta:
         model = User
-        fields = ('email', )
+        fields = ['email', 'password', 'password2']
+        depth = 1
 
-# Register Serializer
-class RegisterSerializer(serializers.ModelSerializer):
-    
+    def validate(self, attrs):
+        if attrs['password'] != attrs['password2']:
+            raise serializers.ValidationError({"password": "Password fields didn't match."})
+        return attrs
+
+    def create(self, validated_data):
+        user = User.objects.create(
+            email=validated_data['email'],
+        )
+        
+        user.set_password(validated_data['password'])
+        user.save()
+
+        return user
+        
+class ProfileSerializer(serializers.ModelSerializer):
+    user = serializers.SerializerMethodField()
     class Meta:
-        model = User
-        fields  ('id', 'username', 'email', 'password')
-        extra_kwargs = {'password': {'write_only': True}}
+        model = Profile
+        fields = '__all__'
 
-        def create(self, validate_data):
-            user = User.objects.create_user(validate_data['username'])
-
-            return user
-
-# Login Serializer
-class LoginSerializer(serializer.Serialize):
-    username = serializer.CharField()
-    password = serializer.CharField()
-
-    def validate(self, data):
-        user = authenticate(**data)
-        if user and user.is_active:
-            return user
-        raise serializer.ValidationError("Incorrect Credentials")
-
-# class UserSerializerWithToken(serializers.ModelSerializer):
-
-#     token = serializers.SerializerMethodField()
-#     password = serializers.CharField(write_only=True)
-
-#     def get_token(self, obj):
-#         jwt_payload_handler = api_settings.JWT_payload_handler
-#         jwt_encode_handler = api_settings.jwt_encode_handler
-
-#         payload = jwt_payload_handler(obj)
-#         token = jwt_encode_handler(payload)
-#         return token
-    
-#     def create(self, validated_data):
-#         password = validated_data.pop('password', None)
-#         instance = self.Meta.model(**validated_data)
-#         if password is not None:
-#             instance.set_password(password)
-#         instance.save()
-#         return instance
-
-#     class Meta:
-#         model = User
-#         fields = ('token', 'username', 'password')
+    def get_user(self, instance):
+        return UserSerializer(instance.user).data
