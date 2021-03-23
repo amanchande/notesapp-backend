@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/3.1/ref/settings/
 
 from pathlib import Path
 from decouple import config
+from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -144,3 +145,13 @@ STATIC_URL = '/static/'
 
 # Custom auth model
 AUTH_USER_MODEL = 'accounts.User'
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=5),
+    # changing access-token lifetime to 5 hours
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=10),
+    # at every refresh new refresh token is also sent along with new access token
+    'ROTATE_REFRESH_TOKENS': True,
+    'AUTH_HEADER_TYPES': ('Token',),
+    # change auth header to Token from Bearer
+}
